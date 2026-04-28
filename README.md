@@ -1,83 +1,170 @@
-# Local Environment
-> Using Docker for our local environment
+# Movie Watchlist
 
-## Requirements
+Aplicación web para buscar películas, guardar favoritos y compartir recomendaciones con otros usuarios.
 
-1. Having [Docker installed](https://www.docker.com/products/docker-desktop) (you will need to create a Hub account)
-2. Having [Git installed](https://git-scm.com/downloads)
+---
 
-## Installation
+## Descripción
 
-1. Clone this repository into your projects folder using the `git clone` command.
+Movie Watchlist permite a los usuarios registrarse, iniciar sesión y explorar películas usando la API de **The Movie Database (TMDB)**. Cada usuario puede ver el detalle de cualquier película, dejar comentarios, marcarla como favorita y compartirla con la comunidad.
 
-## Instructions
+---
 
-1. After cloning the project, open your terminal and access the root folder using the `cd /path/to/the/folder` command.
-2. Edit the `.env` file with the desired information for your project. Do not forget to edit the line `12` with the name of the architecture that you are using. The available platform architectures are: `linux/amd64`, `linux/arm/v7`, `linux/arm64`.
-3. Once it has been created, execute the command `docker compose up -d` in your terminal to run your local environment.
+## Capturas de pantalla
 
-**Note:** The first time you run this command it will take some time because it will download all the required images from the Hub.
 
-At this point, if you execute the command `docker compose ps` you should see a total of 6 containers running (this table is using the default ports of each service. Those values should be configured in the `.env` file):
+Home
+
+![img_2.png](img_2.png)
+
+Search
+
+![img_3.png](img_3.png)
+
+Detail
+
+![img_4.png](img_4.png)
+
+---
+
+## Funcionalidades
+
+| Funcionalidad | Descripción |
+|---|---|
+| Registro / Login | Creación de cuenta con email y contraseña |
+| Búsqueda de películas | Búsqueda en tiempo real contra la API de TMDB |
+| Detalle de película | Sinopsis, director, actores, géneros y póster |
+| Comentarios | Los usuarios autenticados pueden dejar comentarios en cada película |
+| Favoritos | Marcar/desmarcar películas como favoritas |
+| Películas compartidas | Compartir películas para que aparezcan en el listado público |
+
+---
+
+## Tecnologías
+
+- **Backend:** PHP 8 · CodeIgniter 4
+- **Base de datos:** MySQL 8.4
+- **Servidor web:** Nginx (Alpine)
+- **Contenedores:** Docker / Docker Compose
+- **API externa:** [The Movie Database (TMDB)](https://www.themoviedb.org/)
+- **Herramientas de desarrollo:** phpMyAdmin · Xdebug
+
+---
+
+## Estructura del proyecto
 
 ```
-NAME                                                    COMMAND           SERVICE             STATUS              PORTS
--------------------------------------------------------------------------------------------------------------------------------
-${PROJECT_PREFIX}_${PROJECT_NAME}_app            "docker-php-entrypoi…"   app                 running             9000/tcp
-${PROJECT_PREFIX}_${PROJECT_NAME}_mysql          "docker-entrypoint.s…"   mysql               running             ${MYSQL_PORT}:3306/tcp
-${PROJECT_PREFIX}_${PROJECT_NAME}_nginx          "/docker-entrypoint.…"   nginx               running             ${NGINX_PORT}:8080/tcp
-${PROJECT_PREFIX}_${PROJECT_NAME}_phpmyadmin     "/docker-entrypoint.…"   phpmyadmin          running             ${PHPMYADMIN_PORT}:8081/tcp
+/
+├── docker-compose.yaml        # Orquestación de contenedores
+├── Dockerfile                 # Imagen PHP personalizada
+├── docker-compose/
+│   ├── mysql/                 # SQL inicial de la base de datos
+│   ├── nginx/                 # Configuración de Nginx
+│   └── xdebug/                # Configuración de Xdebug
+└── www/                       # Aplicación CodeIgniter 4
+    ├── app/
+    │   ├── Controllers/       # HomeController, MovieController, LoginController…
+    │   ├── Models/            # UserModel, MovieModel, FavoriteModel, SharedMoviesModel…
+    │   ├── Views/             # Vistas PHP (home, login, register, movie_details…)
+    │   ├── Config/Routes.php  # Definición de rutas
+    │   └── Database/
+    │       └── Migrations/    # Migraciones de la base de datos
+    └── public/                # Punto de entrada (index.php)
 ```
 
-At this point, you should be able to access the application by visiting the following address in your browser [http://localhost:${NGINX_PORT}/](http://localhost:8080/).
+---
 
-### Databases
+## Rutas principales
 
-There are multiple ways to access the databases inside the docker container. In this case we are going to cover two options:
+| Método | Ruta | Descripción |
+|---|---|---|
+| GET | `/` | Página de inicio |
+| GET/POST | `/sign-up` | Registro de usuario |
+| GET/POST | `/sign-in` | Inicio de sesión |
+| GET | `/logout` | Cerrar sesión |
+| GET | `/movies?query=...` | Buscar películas |
+| GET | `/movie/{id}` | Detalle de película |
+| POST | `/movie/{id}` | Añadir comentario |
+| POST | `/favorites` | Marcar/desmarcar favorito |
+| GET | `/favorites` | Listado de favoritos del usuario |
+| POST | `/shared` | Compartir película |
+| GET | `/shared` | Listado de películas compartidas |
 
-1. Manually accessing the container
-2. Using your browser
+---
 
-#### [MySQL] Manually
+## Base de datos
 
-In order to manually access the database, we need the name of the database container. Use `docker-compose ps`. The name should be something like `${PROJECT_PREFIX}_${PROJECT_NAME}_mysql`.
+El esquema se genera automáticamente mediante las migraciones de CodeIgniter. Las tablas principales son:
 
-Now, we are going to ssh into the container using the command `docker exec -it container_id bash`. At this point, you should be able to notice that the terminal prompt has changed because now you are inside of the container.
+- **users** — Credenciales de los usuarios
+- **movies** — Películas cacheadas desde TMDB
+- **comments** — Comentarios por película y usuario
+- **favorites** — Relación usuario ↔ película favorita
+- **shared_movies** — Películas compartidas públicamente
 
-To access the database, execute the command `mysql -u root -p`. (The username and password are specified in the .env file.)
+---
 
-#### [MySQL] Browser
+## Instalación y puesta en marcha
 
-To access to the admin page, visit the URL [http://localhost:${PHPMYADMIN_PORT}/](http://localhost:8081/) in your browser.
+### Requisitos previos
 
-### Shared files and directories
+- Docker Desktop instalado y en ejecución
 
-1. In the root of the environment folder, you'll find a `.env` file with some useful information like the DB usernames and passwords used to create the environment by default (It should be initially modified with the information of your project).
-2. All the content of the website should be placed inside a shared directory called `./www`. The public content should be placed in `./www/public`.
-3. Inside the folder `./docker-compose` you'll find some interesting folders:
-   1. The `mysql` folder can be used to load a database when you run the `docker compose up -d` command. If you place a .sql file inside this folder, it'll be imported to the MySQL database automatically.
-   2. The `mysql/config` folder contains the configuration of the MySQL server (It shouldn't be modified unless you know what are you doing).
-   3. The `nginx` folder contains a file with the custom configuration of the Nginx server (It shouldn't be modified unless you know what are you doing).
-   4. The `xdebug` folder contains the configuration for the PHP's debugging system (It shouldn't be modified unless you know what are you doing).
+### Pasos
 
-### Composer
+1. **Clona el repositorio**
 
-If you need to run composer to manage/install/update your project dependencies, open your terminal and execute the command `docker compose exec app composer {command}` where `{command}` is the action that you want to perform (for example install/update/...).
+   ```bash
+   git clone <url-del-repositorio>
+   cd <carpeta-del-proyecto>
+   ```
 
-### PHP Extensions
+2. **Configura las variables de entorno**
 
-Those PHP extensions are included in the environment:
+   Edita el archivo `.env` con los valores de tu entorno. Variables relevantes:
 
-   - pdo_mysql
-   - mbstring
-   - exif
-   - pcntl
-   - bcmath
-   - gd
-   - zip
-   - intl
-   - mysqli
-   - xdebug
-   - wkhtmltopdf
+   | Variable | Valor por defecto | Descripción |
+   |---|---|---|
+   | `NGINX_PORT` | `7080` | Puerto de acceso a la app |
+   | `PHPMYADMIN_PORT` | `7081` | Puerto de phpMyAdmin |
+   | `MYSQL_PORT` | `7306` | Puerto de MySQL |
+   | `ARCH` | `linux/arm64` | Arquitectura de tu máquina (`linux/amd64` en Intel) |
+   | `DB_DATABASE` | `movie_watchlist_bbdd` | Nombre de la base de datos |
+   | `DB_USERNAME` | `pw2user` | Usuario de MySQL |
+   | `DB_PASSWORD` | `pw2pass` | Contraseña de MySQL |
 
-If you need to include more extensions you can add them in the `Dockerfile` that you must find in the root of the environment folder.
+3. **Levanta los contenedores**
+
+   ```bash
+   docker compose up -d --build
+   ```
+
+4. **Ejecuta las migraciones**
+
+   ```bash
+   docker compose exec app php spark migrate
+   ```
+
+5. **Accede a la aplicación**
+
+   - App: [http://localhost:7080](http://localhost:7080)
+   - phpMyAdmin: [http://localhost:7081](http://localhost:7081)
+
+---
+
+## Comandos útiles
+
+| Comando | Descripción |
+|---|---|
+| `docker compose up -d` | Levantar el entorno |
+| `docker compose down` | Parar el entorno |
+| `docker compose down -v` | Parar el entorno y eliminar la base de datos |
+| `docker compose exec app php spark migrate` | Ejecutar migraciones |
+| `docker compose exec app composer install` | Instalar dependencias PHP |
+| `docker compose ps` | Ver estado de los contenedores |
+
+---
+
+## Extensiones PHP incluidas
+
+`pdo_mysql` · `mbstring` · `exif` · `pcntl` · `bcmath` · `gd` · `zip` · `intl` · `mysqli` · `xdebug`
